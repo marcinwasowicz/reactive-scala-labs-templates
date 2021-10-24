@@ -1,10 +1,10 @@
 package EShop.lab2
 
 import akka.actor.Cancellable
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
-import scala.language.postfixOps
 
+import scala.language.postfixOps
 import scala.concurrent.duration._
 
 object TypedCheckout {
@@ -34,16 +34,80 @@ class TypedCheckout {
   val checkoutTimerDuration: FiniteDuration = 1 seconds
   val paymentTimerDuration: FiniteDuration  = 1 seconds
 
-  def start: Behavior[TypedCheckout.Command] = ???
+  def start: Behavior[TypedCheckout.Command] = Behaviors.receive {(ctx, msg) =>
+      msg match {
+          case StartCheckout => selectingDelivery(
+              ctx.system.scheduler.scheduleOnce(
+                  checkoutTimerDuration,
+                  {() => ctx.self ! ExpireCheckout}
+              )(ctx.system.executionContext)
+          )
 
-  def selectingDelivery(timer: Cancellable): Behavior[TypedCheckout.Command] = ???
+      }
+  }
 
-  def selectingPaymentMethod(timer: Cancellable): Behavior[TypedCheckout.Command] = ???
+  def selectingDelivery(timer: Cancellable): Behavior[TypedCheckout.Command] = Behaviors.receive {(ctx, msg) =>
+      msg match {
+          case ExpireCheckout =>
+              timer.cancel()
+              cancelled
+          case CancelCheckout =>
+                timer.cancel()
+                cancelled
+          case SelectDeliveryMethod(_) =>
+                timer.cancel()
+                selectingPaymentMethod(
+                    ctx.system.scheduler.scheduleOnce(
+                        checkoutTimerDuration,
+                        {() => ctx.self ! ExpireCheckout}
+                    )(ctx.system.executionContext)
+                )
+      }
+  }
 
-  def processingPayment(timer: Cancellable): Behavior[TypedCheckout.Command] = ???
+  def selectingPaymentMethod(timer: Cancellable): Behavior[TypedCheckout.Command] = Behaviors.receive {(ctx, msg) =>
+      msg match {
+          case ExpireCheckout =>
+              timer.cancel()
+              cancelled
+          case CancelCheckout =>
+              timer.cancel()
+              cancelled
+          case SelectPayment(_) =>
+              timer.cancel()
+              processingPayment(
+                  ctx.system.scheduler.scheduleOnce(
+                      paymentTimerDuration,
+                      {() => ctx.self ! ExpirePayment}
+                  )(ctx.system.executionContext)
+              )
+      }
+  }
 
-  def cancelled: Behavior[TypedCheckout.Command] = ???
+  def processingPayment(timer: Cancellable): Behavior[TypedCheckout.Command] = Behaviors.receive {(ctx, msg) =>
+      msg match {
+          case ExpirePayment =>
+              timer.cancel()
+              cancelled
+          case CancelCheckout =>
+              timer.cancel()
+              cancelled
+          case ConfirmPaymentReceived =>
+               timer.cancel()
+               closed
+      }
+  }
 
-  def closed: Behavior[TypedCheckout.Command] = ???
+  def cancelled: Behavior[TypedCheckout.Command] = Behaviors.receive {(_, msg) =>
+      msg match {
+          case  _ => Behaviors.same
+      }
+  }
+
+  def closed: Behavior[TypedCheckout.Command] = Behaviors.receive {(_, msg) =>
+      msg match {
+          case  _ => Behaviors.same
+      }
+  }
 
 }

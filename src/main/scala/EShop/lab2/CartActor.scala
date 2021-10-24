@@ -26,17 +26,48 @@ class CartActor extends Actor {
 
   import CartActor._
 
-  private val log       = Logging(context.system, this)
-  val cartTimerDuration = 5 seconds
+  private val log = Logging(context.system, this)
+  val cartTimerDuration: FiniteDuration = 5 seconds
 
-  private def scheduleTimer: Cancellable = ???
+  private def scheduleTimer: Cancellable = {
+      context.system.scheduler.scheduleOnce(cartTimerDuration, self, ExpireCart)(context.system.dispatcher)
+  }
 
-  def receive: Receive = ???
+  def receive: Receive = empty
 
-  def empty: Receive = ???
+  def empty: Receive = {
+      case AddItem(item) => context.become(nonEmpty(Cart.empty.addItem(item), scheduleTimer))
+  }
 
-  def nonEmpty(cart: Cart, timer: Cancellable): Receive = ???
+  def nonEmpty(cart: Cart, timer: Cancellable): Receive = {
+      case ExpireCart =>
+          timer.cancel()
+          context.become(empty)
 
-  def inCheckout(cart: Cart): Receive = ???
+      case AddItem(item) =>
+          timer.cancel()
+          context.become(nonEmpty(cart.addItem(item), scheduleTimer))
+
+      case RemoveItem(item) =>
+          timer.cancel()
+          val newCart = cart.removeItem(item)
+          if (cart.contains(item)) {
+              newCart.size match {
+                  case 0 => context.become(empty)
+                  case _ => context.become(nonEmpty(newCart, scheduleTimer))
+              }
+          }
+
+      case StartCheckout =>
+          timer.cancel()
+          context.become(inCheckout(cart))
+  }
+
+  def inCheckout(cart: Cart): Receive = {
+      case ConfirmCheckoutClosed =>
+          context.become(empty)
+      case ConfirmCheckoutCancelled =>
+          context.become(nonEmpty(cart, scheduleTimer))
+  }
 
 }
