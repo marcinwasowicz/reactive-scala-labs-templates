@@ -50,7 +50,7 @@ class TypedCartActor {
 
           case AddItem(item) =>
               timer.cancel()
-             nonEmpty(cart.addItem(item), scheduleTimer(ctx))
+              nonEmpty(cart.addItem(item), scheduleTimer(ctx))
 
           case RemoveItem(item) =>
               timer.cancel()
