@@ -17,6 +17,8 @@ object TypedCartActor {
 
   case class RemoveItem(item: Any) extends Command
 
+  case class GetItems(sender: ActorRef[Cart]) extends Command
+
   case class StartCheckout(orderManagerToCartRef: ActorRef[Event]) extends Command
 
   case class CheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command]) extends Event
@@ -39,6 +41,10 @@ class TypedCartActor {
   def empty: Behavior[TypedCartActor.Command] = Behaviors.receive { (ctx, msg) =>
     msg match {
       case AddItem(item) => nonEmpty(Cart.empty.addItem(item), scheduleTimer(ctx))
+
+      case GetItems(sender) =>
+        sender ! Cart.empty
+        empty
     }
   }
 
@@ -61,6 +67,10 @@ class TypedCartActor {
           case `cartSize` => Behaviors.same
           case _        => nonEmpty(newCart, scheduleTimer(ctx))
         }
+
+      case GetItems(sender) =>
+        sender ! cart
+        nonEmpty(cart, timer)
 
       case StartCheckout(orderManagerToCartRef) =>
         timer.cancel()
