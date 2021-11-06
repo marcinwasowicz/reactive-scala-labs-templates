@@ -42,7 +42,7 @@ class TypedCartTest
   }
 
   it should "start checkout" in {
-    val cart = testKit.spawn(new TypedCartActor().start)
+    val cart  = testKit.spawn(new TypedCartActor().start)
     val probe = testKit.createTestProbe[Event]()
 
     cart ! AddItem("sample_item")

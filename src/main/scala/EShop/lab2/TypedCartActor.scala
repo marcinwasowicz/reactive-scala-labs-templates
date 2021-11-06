@@ -63,9 +63,9 @@ class TypedCartActor {
         val cartSize = cart.size
         val newCart  = cart.removeItem(item)
         newCart.size match {
-          case 0        => empty
+          case 0          => empty
           case `cartSize` => Behaviors.same
-          case _        => nonEmpty(newCart, scheduleTimer(ctx))
+          case _          => nonEmpty(newCart, scheduleTimer(ctx))
         }
 
       case GetItems(sender) =>
