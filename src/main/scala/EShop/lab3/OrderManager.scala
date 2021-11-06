@@ -57,18 +57,7 @@ class OrderManager {
           case TypedCartActor.CheckoutStarted(checkoutRef) =>
             ConfirmCheckoutStarted(checkoutRef)
         }
-        val orderManagerToCheckoutRef: ActorRef[TypedCheckout.Event] = ctx.messageAdapter {
-          case TypedCheckout.PaymentStarted(payment) =>
-            ConfirmPaymentStarted(payment)
-        }
-        val orderManagerToPaymentRef: ActorRef[Payment.Event] = ctx.messageAdapter { case Payment.PaymentReceived =>
-          ConfirmPaymentReceived
-        }
-        cartActor ! TypedCartActor.StartCheckout(
-          orderManagerToCartRef,
-          orderManagerToCheckoutRef,
-          orderManagerToPaymentRef
-        )
+        cartActor ! TypedCartActor.StartCheckout(orderManagerToCartRef)
         inCheckout(cartActor, sender)
     }
   }
@@ -86,11 +75,18 @@ class OrderManager {
 
   def inCheckout(
     checkoutActorRef: ActorRef[TypedCheckout.Command]
-  ): Behavior[OrderManager.Command] = Behaviors.receive { (_, msg) =>
+  ): Behavior[OrderManager.Command] = Behaviors.receive { (ctx, msg) =>
     msg match {
       case SelectDeliveryAndPaymentMethod(delivery, payment, sender) =>
+        val orderManagerToCheckoutRef: ActorRef[TypedCheckout.Event] = ctx.messageAdapter {
+          case TypedCheckout.PaymentStarted(payment) =>
+            ConfirmPaymentStarted(payment)
+        }
+        val orderManagerToPaymentRef: ActorRef[Payment.Event] = ctx.messageAdapter { case Payment.PaymentReceived =>
+          ConfirmPaymentReceived
+        }
         checkoutActorRef ! TypedCheckout.SelectDeliveryMethod(delivery)
-        checkoutActorRef ! TypedCheckout.SelectPayment(payment)
+        checkoutActorRef ! TypedCheckout.SelectPayment(payment, orderManagerToCheckoutRef, orderManagerToPaymentRef)
         inPayment(sender)
     }
   }

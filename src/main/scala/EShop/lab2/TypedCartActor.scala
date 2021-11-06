@@ -1,6 +1,5 @@
 package EShop.lab2
 
-import EShop.lab3.Payment
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
@@ -18,11 +17,7 @@ object TypedCartActor {
 
   case class RemoveItem(item: Any) extends Command
 
-  case class StartCheckout(
-    orderManagerToCartRef: ActorRef[Event],
-    orderManagerToCheckoutRef: ActorRef[TypedCheckout.Event],
-    orderManagerToPaymentRef: ActorRef[Payment.Event]
-  ) extends Command
+  case class StartCheckout(orderManagerToCartRef: ActorRef[Event]) extends Command
 
   case class CheckoutStarted(checkoutRef: ActorRef[TypedCheckout.Command]) extends Event
 
@@ -63,17 +58,17 @@ class TypedCartActor {
         val newCart  = cart.removeItem(item)
         newCart.size match {
           case 0        => empty
-          case cartSize => Behaviors.same
+          case `cartSize` => Behaviors.same
           case _        => nonEmpty(newCart, scheduleTimer(ctx))
         }
 
-      case StartCheckout(orderManagerToCartRef, orderManagerToCheckoutRef, orderManagerToPaymentRef) =>
+      case StartCheckout(orderManagerToCartRef) =>
         timer.cancel()
         val checkout = ctx.spawn(new TypedCheckout().start, "checkout")
         val cartToCheckoutRef: ActorRef[TypedCheckout.Event] = ctx.messageAdapter { case TypedCheckout.CheckOutClosed =>
           ConfirmCheckoutClosed
         }
-        checkout ! TypedCheckout.StartCheckout(cartToCheckoutRef, orderManagerToCheckoutRef, orderManagerToPaymentRef)
+        checkout ! TypedCheckout.StartCheckout(cartToCheckoutRef)
         orderManagerToCartRef ! CheckoutStarted(checkout)
         inCheckout(cart)
     }
