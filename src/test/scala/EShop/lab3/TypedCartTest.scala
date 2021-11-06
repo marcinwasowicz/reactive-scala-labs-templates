@@ -2,7 +2,6 @@ package EShop.lab3
 
 import EShop.lab2.{Cart, TypedCartActor}
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -44,19 +43,10 @@ class TypedCartTest
 
   it should "start checkout" in {
     val cart = testKit.spawn(new TypedCartActor().start)
-
     val probe = testKit.createTestProbe[Event]()
-    val mockedEventReceiver = testKit.spawn(
-      Behaviors.monitor(
-        probe.ref,
-        Behaviors.receiveMessage[Event] { case CheckoutStarted(_) =>
-          Behaviors.same
-        }
-      )
-    )
 
     cart ! AddItem("sample_item")
-    cart ! StartCheckout(mockedEventReceiver.ref)
+    cart ! StartCheckout(probe.ref)
 
     probe.expectMessageType[CheckoutStarted]
   }
