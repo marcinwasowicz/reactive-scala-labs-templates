@@ -35,7 +35,6 @@ class PersistentCartActor {
           case _ => Effect.unhandled
         }
 
-
       case NonEmpty(cart, _) =>
         command match {
           case ExpireCart    => Effect.persist(CartExpired)
@@ -61,13 +60,13 @@ class PersistentCartActor {
         command match {
           case ConfirmCheckoutClosed    => Effect.persist(CheckoutClosed)
           case ConfirmCheckoutCancelled => Effect.persist(CheckoutCancelled)
-          case _ => Effect.unhandled
+          case _                        => Effect.unhandled
         }
     }
   }
 
   def eventHandler(context: ActorContext[Command]): (State, Event) => State = (state, event) => {
-    if(state.timerOpt.nonEmpty) {
+    if (state.timerOpt.nonEmpty) {
       state.timerOpt.get.cancel()
     }
 
