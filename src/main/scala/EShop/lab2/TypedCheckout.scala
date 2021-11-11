@@ -34,13 +34,13 @@ object TypedCheckout {
 
   case class PaymentStarted(payment: ActorRef[Payment.Command]) extends Event
 
-  case class DeliveryMethodSelected(method: String)             extends Event
+  case class DeliveryMethodSelected(method: String) extends Event
 
-  case class SelectingDelivery(timer: Cancellable)      extends State(Some(timer))
+  case class SelectingDelivery(timer: Cancellable) extends State(Some(timer))
 
   case class SelectingPaymentMethod(timer: Cancellable) extends State(Some(timer))
 
-  case class ProcessingPayment(timer: Cancellable)      extends State(Some(timer))
+  case class ProcessingPayment(timer: Cancellable) extends State(Some(timer))
 
   case object Uninitialized extends Data
 
@@ -52,17 +52,17 @@ object TypedCheckout {
 
   case object ConfirmPaymentReceived extends Command
 
-  case object CheckOutClosed                                    extends Event
+  case object CheckOutClosed extends Event
 
-  case object CheckoutStarted                                   extends Event
+  case object CheckoutStarted extends Event
 
-  case object CheckoutCancelled                                 extends Event
+  case object CheckoutCancelled extends Event
 
-  case object WaitingForStart                           extends State(None)
+  case object WaitingForStart extends State(None)
 
-  case object Closed                                    extends State(None)
+  case object Closed extends State(None)
 
-  case object Cancelled                                 extends State(None)
+  case object Cancelled extends State(None)
 
 }
 
