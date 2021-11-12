@@ -247,4 +247,12 @@ class PersistentCheckoutTest
     resultCancelCheckout.hasNoEvents shouldBe true
     resultCancelCheckout.state shouldBe Closed
   }
+
+  it should "correctly recover its state and timers after system being forcefully terminated" in {
+    eventSourcedTestKit.runCommand(StartCheckout(cartActorProbe.ref))
+    eventSourcedTestKit.restart()
+    eventSourcedTestKit.getState().isInstanceOf[SelectingDelivery] shouldBe true
+    Thread.sleep(2000)
+    eventSourcedTestKit.getState() shouldBe Cancelled
+  }
 }
