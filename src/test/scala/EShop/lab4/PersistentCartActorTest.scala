@@ -1,5 +1,6 @@
 package EShop.lab4
 
+import EShop.lab2.Cart
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
 import akka.persistence.typed.PersistenceId
@@ -156,5 +157,26 @@ class PersistentCartActorTest
 
     resultAdd2.hasNoEvents shouldBe true
     resultAdd2.state shouldBe Empty
+  }
+
+  it should "recover cart content" in {
+    val items              = Seq("Item1", "Item2", "Item3")
+    val itemGetterActorRef = testKit.createTestProbe[Cart]
+    for (item <- items) eventSourcedTestKit.runCommand(AddItem(item))
+
+    eventSourcedTestKit.restart()
+
+    eventSourcedTestKit.runCommand(GetItems(itemGetterActorRef.ref))
+
+    val postRecoverCart = itemGetterActorRef.expectMessageType[Cart]
+
+    for (item <- items) postRecoverCart.contains(item) shouldBe true
+  }
+
+  it should "correctly recover timers" in {
+    eventSourcedTestKit.runCommand(AddItem("item"))
+    eventSourcedTestKit.restart()
+    Thread.sleep(2000)
+    eventSourcedTestKit.getState() shouldBe Empty
   }
 }
