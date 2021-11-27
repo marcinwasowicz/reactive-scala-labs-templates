@@ -21,14 +21,33 @@ class TypedCartTest
 
   //use GetItems command which was added to make test easier
   it should "add item properly" in {
-    ???
+    val cart  = testKit.spawn(new TypedCartActor().start)
+    val probe = testKit.createTestProbe[Cart]()
+
+    cart ! AddItem("sample_item")
+    cart ! GetItems(probe.ref)
+
+    probe.expectMessage(Cart(Seq("sample_item")))
   }
 
   it should "be empty after adding and removing the same item" in {
-    ???
+    val cart  = testKit.spawn(new TypedCartActor().start)
+    val probe = testKit.createTestProbe[Cart]()
+
+    cart ! AddItem("sample_item")
+    cart ! RemoveItem("sample_item")
+    cart ! GetItems(probe.ref)
+
+    probe.expectMessage(Cart.empty)
   }
 
   it should "start checkout" in {
-    ???
+    val cart  = testKit.spawn(new TypedCartActor().start)
+    val probe = testKit.createTestProbe[Event]()
+
+    cart ! AddItem("sample_item")
+    cart ! StartCheckout(probe.ref)
+
+    probe.expectMessageType[CheckoutStarted]
   }
 }
