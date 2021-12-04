@@ -1,8 +1,11 @@
 package EShop.lab5
+
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
+import akka.actor.typed.scaladsl.Behaviors
+
 import java.net.URI
 import java.util.zip.GZIPInputStream
-
-import akka.actor.{Actor, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
@@ -33,7 +36,8 @@ class SearchService() {
     .toList
     .groupBy(_.brand.toLowerCase)
 
-  def search(brand: String, keyWords: List[String]): List[ProductCatalog.Item] = {
+  def search(brand: String,
+             keyWords: List[String]): List[ProductCatalog.Item] = {
     val lowerCasedKeyWords = keyWords.map(_.toLowerCase)
     brandItemsMap
       .getOrElse(brand.toLowerCase, Nil)
@@ -47,25 +51,33 @@ class SearchService() {
 }
 
 object ProductCatalog {
-  case class Item(id: URI, name: String, brand: String, price: BigDecimal, count: Int)
+  val ProductCatalogServiceKey = ServiceKey[Query]("ProductCatalog")
+
+  case class Item(id: URI,
+                  name: String,
+                  brand: String,
+                  price: BigDecimal,
+                  count: Int)
 
   sealed trait Query
-  case class GetItems(brand: String, productKeyWords: List[String]) extends Query
+  case class GetItems(brand: String,
+                      productKeyWords: List[String],
+                      sender: ActorRef[Ack])
+      extends Query
 
   sealed trait Ack
   case class Items(items: List[Item]) extends Ack
 
-  def props(searchService: SearchService): Props =
-    Props(new ProductCatalog(searchService))
-}
+  def apply(searchService: SearchService): Behavior[Query] = Behaviors.setup {
+    context =>
+      context.system.receptionist ! Receptionist
+        .register(ProductCatalogServiceKey, context.self)
 
-class ProductCatalog(searchService: SearchService) extends Actor {
-
-  import ProductCatalog._
-
-  override def receive: Receive = {
-    case GetItems(brand, productKeyWords) =>
-      sender() ! Items(searchService.search(brand, productKeyWords))
+      Behaviors.receiveMessage {
+        case GetItems(brand, productKeyWords, sender) =>
+          sender ! Items(searchService.search(brand, productKeyWords))
+          Behaviors.same
+      }
   }
 }
 
@@ -73,13 +85,14 @@ object ProductCatalogApp extends App {
 
   private val config = ConfigFactory.load()
 
-  private val productCatalogSystem = ActorSystem(
+  private val productCatalogSystem = ActorSystem[Nothing](
+    Behaviors.empty,
     "ProductCatalog",
     config.getConfig("productcatalog").withFallback(config)
   )
 
-  productCatalogSystem.actorOf(
-    ProductCatalog.props(new SearchService()),
+  productCatalogSystem.systemActorOf(
+    ProductCatalog(new SearchService()),
     "productcatalog"
   )
 

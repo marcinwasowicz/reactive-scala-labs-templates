@@ -8,11 +8,11 @@ import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 
 class TypedCartTest
-  extends ScalaTestWithActorTestKit
-  with AnyFlatSpecLike
-  with BeforeAndAfterAll
-  with Matchers
-  with ScalaFutures {
+    extends ScalaTestWithActorTestKit
+    with AnyFlatSpecLike
+    with BeforeAndAfterAll
+    with Matchers
+    with ScalaFutures {
 
   override def afterAll: Unit =
     testKit.shutdownTestKit()
@@ -21,7 +21,7 @@ class TypedCartTest
 
   //use GetItems command which was added to make test easier
   it should "add item properly" in {
-    val cart  = testKit.spawn(new TypedCartActor().start)
+    val cart = testKit.spawn(new TypedCartActor().start)
     val probe = testKit.createTestProbe[Cart]()
 
     cart ! AddItem("sample_item")
@@ -31,7 +31,7 @@ class TypedCartTest
   }
 
   it should "be empty after adding and removing the same item" in {
-    val cart  = testKit.spawn(new TypedCartActor().start)
+    val cart = testKit.spawn(new TypedCartActor().start)
     val probe = testKit.createTestProbe[Cart]()
 
     cart ! AddItem("sample_item")
@@ -42,7 +42,7 @@ class TypedCartTest
   }
 
   it should "start checkout" in {
-    val cart  = testKit.spawn(new TypedCartActor().start)
+    val cart = testKit.spawn(new TypedCartActor().start)
     val probe = testKit.createTestProbe[Event]()
 
     cart ! AddItem("sample_item")

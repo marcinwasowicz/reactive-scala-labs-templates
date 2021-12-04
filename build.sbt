@@ -8,7 +8,7 @@ scalaVersion := "2.12.9"
 
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.0.0"
 
-val akkaVersion     = "2.6.8"
+val akkaVersion     = "2.6.16"
 val akkaHttpVersion = "10.2.0"
 
 libraryDependencies ++= Seq(
@@ -29,7 +29,7 @@ libraryDependencies ++= Seq(
   "com.github.dnvriend"       %% "akka-persistence-inmemory" % "2.5.15.2",
   "com.typesafe.akka"         %% "akka-http"                 % akkaHttpVersion,
   "com.typesafe.akka"         %% "akka-http-spray-json"      % akkaHttpVersion,
-  "org.scalatest"             %% "scalatest"                 % "3.2.2" % "test",
+  "org.scalatest"             %% "scalatest"                 % "3.2.9" % "test",
   "io.gatling"                % "gatling-http"               % "3.2.1",
   "io.netty"                  % "netty"                      % "3.10.6.Final",
   "ch.qos.logback"            % "logback-classic"            % "1.2.3"
