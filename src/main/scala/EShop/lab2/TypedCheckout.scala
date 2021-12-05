@@ -25,12 +25,13 @@ object TypedCheckout {
   case class SelectDeliveryMethod(method: String) extends Command
 
   case class SelectPayment(
-    payment: String,
-    orderManagerToCheckoutRef: ActorRef[Event],
-    orderManagerToPaymentRef: ActorRef[Payment.Event]
+      payment: String,
+      orderManagerToCheckoutRef: ActorRef[Event],
+      orderManagerToPaymentRef: ActorRef[Payment.Event]
   ) extends Command
 
-  case class StartCheckout(cartActorToCheckoutRef: ActorRef[Event]) extends Command
+  case class StartCheckout(cartActorToCheckoutRef: ActorRef[Event])
+      extends Command
 
   case class PaymentStarted(payment: ActorRef[Payment.Command]) extends Event
 
@@ -38,7 +39,8 @@ object TypedCheckout {
 
   case class SelectingDelivery(timer: Cancellable) extends State(Some(timer))
 
-  case class SelectingPaymentMethod(timer: Cancellable) extends State(Some(timer))
+  case class SelectingPaymentMethod(timer: Cancellable)
+      extends State(Some(timer))
 
   case class ProcessingPayment(timer: Cancellable) extends State(Some(timer))
 
@@ -51,6 +53,8 @@ object TypedCheckout {
   case object ExpirePayment extends Command
 
   case object ConfirmPaymentReceived extends Command
+
+  case object PaymentRejected extends Command
 
   case object CheckOutClosed extends Event
 
@@ -71,7 +75,7 @@ class TypedCheckout {
   import TypedCheckout._
 
   val checkoutTimerDuration: FiniteDuration = 1 seconds
-  val paymentTimerDuration: FiniteDuration  = 1 seconds
+  val paymentTimerDuration: FiniteDuration = 1 seconds
 
   def start: Behavior[TypedCheckout.Command] = Behaviors.receive { (ctx, msg) =>
     msg match {
@@ -88,8 +92,8 @@ class TypedCheckout {
   }
 
   def selectingDelivery(
-    timer: Cancellable,
-    cartActorToCheckoutRef: ActorRef[Event]
+      timer: Cancellable,
+      cartActorToCheckoutRef: ActorRef[Event]
   ): Behavior[TypedCheckout.Command] = Behaviors.receive { (ctx, msg) =>
     msg match {
       case ExpireCheckout =>
@@ -111,8 +115,8 @@ class TypedCheckout {
   }
 
   def selectingPaymentMethod(
-    timer: Cancellable,
-    cartActorToCheckoutRef: ActorRef[Event]
+      timer: Cancellable,
+      cartActorToCheckoutRef: ActorRef[Event]
   ): Behavior[TypedCheckout.Command] = Behaviors.receive { (ctx, msg) =>
     msg match {
       case ExpireCheckout =>
@@ -121,12 +125,18 @@ class TypedCheckout {
       case CancelCheckout =>
         timer.cancel()
         cancelled
-      case SelectPayment(method, orderManagerToCheckoutRef, orderManagerToPaymentRef) =>
+      case SelectPayment(method,
+                         orderManagerToCheckoutRef,
+                         orderManagerToPaymentRef) =>
         timer.cancel()
-        val checkoutToPaymentRef: ActorRef[Payment.Event] = ctx.messageAdapter { case Payment.PaymentReceived =>
-          TypedCheckout.ConfirmPaymentReceived
+        val checkoutToPaymentRef: ActorRef[Payment.Event] = ctx.messageAdapter {
+          case Payment.PaymentReceived =>
+            TypedCheckout.ConfirmPaymentReceived
         }
-        val payment = ctx.spawn(new Payment(method, orderManagerToPaymentRef, checkoutToPaymentRef).start, "payment")
+        val payment = ctx.spawn(new Payment(method,
+                                            orderManagerToPaymentRef,
+                                            checkoutToPaymentRef).start,
+                                "payment")
         orderManagerToCheckoutRef ! PaymentStarted(payment)
         processingPayment(
           ctx.system.scheduler.scheduleOnce(
@@ -139,8 +149,8 @@ class TypedCheckout {
   }
 
   def processingPayment(
-    timer: Cancellable,
-    cartActorToCheckoutRef: ActorRef[Event]
+      timer: Cancellable,
+      cartActorToCheckoutRef: ActorRef[Event]
   ): Behavior[TypedCheckout.Command] = Behaviors.receive { (_, msg) =>
     msg match {
       case ExpirePayment =>
@@ -162,10 +172,11 @@ class TypedCheckout {
     }
   }
 
-  def cancelled: Behavior[TypedCheckout.Command] = Behaviors.receive { (_, msg) =>
-    msg match {
-      case _ => Behaviors.same
-    }
+  def cancelled: Behavior[TypedCheckout.Command] = Behaviors.receive {
+    (_, msg) =>
+      msg match {
+        case _ => Behaviors.same
+      }
   }
 
 }
