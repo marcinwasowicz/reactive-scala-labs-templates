@@ -39,9 +39,12 @@ object Payment {
             case DoPayment =>
               val messageAdapter = ctx.messageAdapter[PaymentService.Response](
                 response => WrappedPaymentServiceResponse(response))
-              val paymentServiceActorRef =
-                ctx.spawnAnonymous(PaymentService(method, messageAdapter))
-              Behaviors.same
+              val paymentServiceActorRef = ctx.spawnAnonymous(
+                Behaviors.supervise(PaymentService(method, messageAdapter))
+                  .onFailure(restartStrategy)
+              )
+                ctx.watch(paymentServiceActorRef)
+                Behaviors.same
             case WrappedPaymentServiceResponse(PaymentSucceeded) =>
               orderManager ! OrderManager.ConfirmPaymentReceived
               checkout ! TypedCheckout.ConfirmPaymentReceived
