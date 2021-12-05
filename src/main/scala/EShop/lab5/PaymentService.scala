@@ -21,8 +21,20 @@ object PaymentService {
   def apply(
       method: String,
       payment: ActorRef[Response]
-  ): Behavior[HttpResponse] = Behaviors.setup { context =>
-    ???
+  ): Behavior[HttpResponse] = Behaviors.setup { ctx =>
+    implicit val system = ctx.system
+    implicit val executionContext = ctx.system.executionContext
+    val response = Http().singleRequest(HttpRequest(uri = getURI(method)))
+    response.onComplete {
+      case Success(HttpResponse(_: StatusCodes.Success, _, _, _)) =>
+        payment ! PaymentSucceeded
+      case Success(HttpResponse(_: StatusCodes.ServerError, _, _, _)) =>
+        throw PaymentServerError()
+      case Success(HttpResponse(_: StatusCodes.ClientError, _, _, _)) =>
+        throw PaymentClientError()
+      case Failure(reason) => throw reason
+    }
+    Behaviors.stopped
   }
 
   // remember running PymentServiceServer() before trying payu based payments
