@@ -41,9 +41,8 @@ class SearchService() {
     val lowerCasedKeyWords = keyWords.map(_.toLowerCase)
     brandItemsMap
       .getOrElse(brand.toLowerCase, Nil)
-      .map(
-        item => (lowerCasedKeyWords.count(item.name.toLowerCase.contains), item)
-      )
+      .map(item =>
+        (lowerCasedKeyWords.count(item.name.toLowerCase.contains), item))
       .sortBy(-_._1) // sort in desc order
       .take(10)
       .map(_._2)
@@ -52,21 +51,6 @@ class SearchService() {
 
 object ProductCatalog {
   val ProductCatalogServiceKey = ServiceKey[Query]("ProductCatalog")
-
-  case class Item(id: URI,
-                  name: String,
-                  brand: String,
-                  price: BigDecimal,
-                  count: Int)
-
-  sealed trait Query
-  case class GetItems(brand: String,
-                      productKeyWords: List[String],
-                      sender: ActorRef[Ack])
-      extends Query
-
-  sealed trait Ack
-  case class Items(items: List[Item]) extends Ack
 
   def apply(searchService: SearchService): Behavior[Query] = Behaviors.setup {
     context =>
@@ -79,6 +63,23 @@ object ProductCatalog {
           Behaviors.same
       }
   }
+
+  sealed trait Query
+
+  sealed trait Ack
+
+  case class Item(id: URI,
+                  name: String,
+                  brand: String,
+                  price: BigDecimal,
+                  count: Int)
+
+  case class GetItems(brand: String,
+                      productKeyWords: List[String],
+                      sender: ActorRef[Ack])
+      extends Query
+
+  case class Items(items: List[Item]) extends Ack
 }
 
 object ProductCatalogApp extends App {

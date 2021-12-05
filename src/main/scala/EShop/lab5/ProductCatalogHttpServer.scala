@@ -44,14 +44,18 @@ class ProductCatalogHttpServer extends JsonSupport {
   implicit val system = ActorSystem[Nothing](Behaviors.empty, "ProductCatalog")
   implicit val timeout: Timeout = 3.seconds
 
+  def start(port: Int) = {
+    val bindingFuture = Http().newServerAt("localhost", port).bind(routes)
+    Await.ready(system.whenTerminated, Duration.Inf)
+  }
+
   def routes: Route = {
     path("search") {
       get {
         entity(as[ProductCatalogHttpServer.GetItems]) { getItemsRequest =>
-          val productCatalogListing = system.receptionist.ask(
-            (ref: ActorRef[Receptionist.Listing]) =>
-              Receptionist.find(ProductCatalog.ProductCatalogServiceKey, ref)
-          )
+          val productCatalogListing =
+            system.receptionist.ask((ref: ActorRef[Receptionist.Listing]) =>
+              Receptionist.find(ProductCatalog.ProductCatalogServiceKey, ref))
 
           onSuccess(productCatalogListing) {
             case ProductCatalog.ProductCatalogServiceKey.Listing(listing) =>
@@ -63,8 +67,7 @@ class ProductCatalogHttpServer extends JsonSupport {
                   ref =>
                     ProductCatalog.GetItems(getItemsRequest.brand,
                                             getItemsRequest.productKeyWords,
-                                            ref)
-                )
+                                            ref))
 
               onSuccess(itemsResponse) {
                 case ProductCatalog.Items(items) => complete(items)
@@ -75,11 +78,6 @@ class ProductCatalogHttpServer extends JsonSupport {
         }
       }
     }
-  }
-
-  def start(port: Int) = {
-    val bindingFuture = Http().newServerAt("localhost", port).bind(routes)
-    Await.ready(system.whenTerminated, Duration.Inf)
   }
 }
 

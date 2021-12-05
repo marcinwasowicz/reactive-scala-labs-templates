@@ -1,20 +1,13 @@
 package EShop.lab5
 
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 
-import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 object PaymentService {
-
-  sealed trait Response
-  case object PaymentSucceeded extends Response
-
-  case class PaymentClientError() extends Exception
-  case class PaymentServerError() extends Exception
 
   // actor behavior which needs to be supervised
   // use akka.http.scaladsl.Http to make http based payment request
@@ -51,4 +44,12 @@ object PaymentService {
     case "visa"   => s"http://httpbin.org/status/200"
     case _        => s"http://httpbin.org/status/404"
   }
+
+  sealed trait Response
+
+  case class PaymentClientError() extends Exception
+
+  case class PaymentServerError() extends Exception
+
+  case object PaymentSucceeded extends Response
 }
